@@ -147,6 +147,130 @@ okulovan@b1-t-oan:~$ ssh-add /home/okulovan/yc_key
 Identity added: /home/okulovan/yc_key (okulovan@b1-t-oan)
 okulovan@b1-t-oan:~$ ssh-add ~/yc_key
 Identity added: /home/okulovan/yc_key (okulovan@b1-t-oan)
+okulovan@b1-t-oan:~$ yc compute instance create \
+    --name otus-vm \
+    --hostname otus-vm \
+    --cores 2 \
+    --memory 4 \
+    --create-boot-disk size=15G,type=network-hdd,image-folder-id=standard-images,image-family=ubuntu-2004-lts \
+    --network-interface subnet-name=otus-subnet,nat-ip-version=ipv4 \
+    --ssh-key ~/yc_key.pub \
+> 
+done (41s)
+id: fhmdssudqgungturhlma
+folder_id: b1gj7o4kqguint1p6sn8
+created_at: "2024-04-09T09:44:21Z"
+name: otus-vm
+zone_id: ru-central1-a
+platform_id: standard-v2
+resources:
+  memory: "4294967296"
+  cores: "2"
+  core_fraction: "100"
+status: RUNNING
+metadata_options:
+  gce_http_endpoint: ENABLED
+  aws_v1_http_endpoint: ENABLED
+  gce_http_token: ENABLED
+  aws_v1_http_token: DISABLED
+boot_disk:
+  mode: READ_WRITE
+  device_name: fhm4hhs9e44fb0o6jr87
+  auto_delete: true
+  disk_id: fhm4hhs9e44fb0o6jr87
+network_interfaces:
+  - index: "0"
+    mac_address: d0:0d:de:73:cd:d4
+    subnet_id: e9bl8qd5j3pira2q0tds
+    primary_v4_address:
+      address: 192.168.0.14
+      one_to_one_nat:
+        address: 158.160.103.203
+        ip_version: IPV4
+serial_port_settings:
+  ssh_authorization: INSTANCE_METADATA
+gpu_settings: {}
+fqdn: otus-vm.ru-central1.internal
+scheduling_policy: {}
+network_settings:
+  type: STANDARD
+placement_policy: {}
+
+okulovan@b1-t-oan:~$ yc compute instances list
++----------------------+---------+---------------+---------+-----------------+--------------+
+|          ID          |  NAME   |    ZONE ID    | STATUS  |   EXTERNAL IP   | INTERNAL IP  |
++----------------------+---------+---------------+---------+-----------------+--------------+
+| fhmdssudqgungturhlma | otus-vm | ru-central1-a | RUNNING | 158.160.103.203 | 192.168.0.14 |
++----------------------+---------+---------------+---------+-----------------+--------------+
+
+okulovan@b1-t-oan:~$ ssh -i ~/yc_key yc-user@158.160.103.203
+The authenticity of host '158.160.103.203 (158.160.103.203)' can't be established.
+ED25519 key fingerprint is SHA256:SU9Scd51jv7CHMTlH5agopXZ9+OQMnYt3COoBBY4y0c.
+This key is not known by any other names
+Are you sure you want to continue connecting (yes/no/[fingerprint])? yes
+Warning: Permanently added '158.160.103.203' (ED25519) to the list of known hosts.
+Welcome to Ubuntu 20.04.6 LTS (GNU/Linux 5.4.0-174-generic x86_64)
+
+ * Documentation:  https://help.ubuntu.com
+ * Management:     https://landscape.canonical.com
+ * Support:        https://ubuntu.com/pro
+
+The programs included with the Ubuntu system are free software;
+the exact distribution terms for each program are described in the
+individual files in /usr/share/doc/*/copyright.
+
+Ubuntu comes with ABSOLUTELY NO WARRANTY, to the extent permitted by
+applicable law.
+
 
 ```
 
+# Устанавливаем  PG 15
+```
+c-user@otus-vm:~$ sudo apt update && sudo apt upgrade -y -q && sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list' && wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add - && sudo apt-get update && sudo apt -y install postgresql-15
+-----------------------------------------------------------------
+c-user@otus-vm:~$ pg_lsclusters 
+Ver Cluster Port Status Owner    Data directory              Log file
+15  main    5432 online postgres /var/lib/postgresql/15/main /var/log/postgresql/postgresql-15-main.log
+
+
+```
+# Ставим PG 13
+```
+yc-user@otus-vm:~$ sudo apt install -y postgresql-13
+-----------------------------------------------------------------
+yc-user@otus-vm:~$ pg_lsclusters 
+Ver Cluster Port Status Owner    Data directory              Log file
+13  main    5433 online postgres /var/lib/postgresql/13/main /var/log/postgresql/postgresql-13-main.log
+15  main    5432 online postgres /var/lib/postgresql/15/main /var/log/postgresql/postgresql-15-main.log
+
+```
+# Обновим 13 до 15
+## Переименовываем кластер
+```
+yc-user@otus-vm:~$ sudo pg_renamecluster 13 main main13
+Stopping cluster 13 main ...
+Starting cluster 13 main13 ...
+yc-user@otus-vm:~$ pg_lsclusters 
+Ver Cluster Port Status Owner    Data directory                Log file
+13  main13  5433 online postgres /var/lib/postgresql/13/main13 /var/log/postgresql/postgresql-13-main13.log
+15  main    5432 online postgres /var/lib/postgresql/15/main   /var/log/postgresql/postgresql-15-main.log
+
+```
+## Обновляем
+```
+yc-user@otus-vm:~$ sudo pg_upgradecluster 13 main13
+c-user@otus-vm:~$ pg_lsclusters 
+Ver Cluster Port Status Owner    Data directory                Log file
+13  main13  5434 down   postgres /var/lib/postgresql/13/main13 /var/log/postgresql/postgresql-13-main13.log
+15  main    5432 online postgres /var/lib/postgresql/15/main   /var/log/postgresql/postgresql-15-main.log
+15  main13  5433 online postgres /var/lib/postgresql/15/main13 /var/log/postgresql/postgresql-15-main13.log
+```
+## Удаляем отключенный
+```
+yc-user@otus-vm:~$ sudo pg_dropcluster 13 main13
+yc-user@otus-vm:~$ pg_lsclusters 
+Ver Cluster Port Status Owner    Data directory                Log file
+15  main    5432 online postgres /var/lib/postgresql/15/main   /var/log/postgresql/postgresql-15-main.log
+15  main13  5433 online postgres /var/lib/postgresql/15/main13 /var/log/postgresql/postgresql-15-main13.log
+```
