@@ -275,5 +275,5 @@ Ver Cluster Port Status Owner    Data directory                Log file
 15  main13  5433 online postgres /var/lib/postgresql/15/main13 /var/log/postgresql/postgresql-15-main13.log
 ```
 # После настройки конфигурации постгресс проверяем доступ с хоста и Dbeaver
-![Dbeaver](HW02-docker PG install/dbeaver.PNG)
+![HW02-docker PG install/dbeaver.PNG](https://github.com/Axealok/otus-PostgreSQL-2024-03-Okulov/blob/c742369319d2dba5fb44c4411feea18c34dbd475/HW02-docker%20PG%20install/dbeaver.PNG))
 ![PSQL][HW02-docker PG install/psql.PNG]
