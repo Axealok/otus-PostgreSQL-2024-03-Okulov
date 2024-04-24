@@ -7,5 +7,21 @@ $ sudo apt update && sudo apt upgrade -y -q && sudo sh -c 'echo "deb http://apt.
 $ pg_lsclusters
 Ver Cluster Port Status Owner    Data directory              Log file
 15  main    5432 online postgres /var/lib/postgresql/15/main /var/log/postgresql/postgresql-15-main.log
+$ sudo -u postgres psql -p 5432
+postgres=# ALTER USER postgres PASSWORD 'postgres';
+ALTER ROLE
+postgres=# create table test(c1 text);
+CREATE TABLE
+postgres=# insert into test values('TestValue');
+INSERT 0 1
+postgres=# select * from test
+postgres-# ;
+    c1
+-----------
+ TestValue
+(1 row)
 
+postgres=#
 ```
+
+## 
