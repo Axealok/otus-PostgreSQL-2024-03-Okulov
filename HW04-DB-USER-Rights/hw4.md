@@ -158,3 +158,33 @@ testdb=> insert into t2 values (2);
 INSERT 0 1
 testdb=> 
 ```
+Отзываем права на public. Теперь создание/изменение таблиц у пользователя testread отсутствуют
+```
+testdb=> \q
+root@b1-t-oan:/etc/postgresql/14/main# sudo -u postgres psql -p 5432
+psql (16.2 (Ubuntu 16.2-1.pgdg22.04+1), сервер 14.11 (Ubuntu 14.11-1.pgdg22.04+1))
+Введите "help", чтобы получить справку.
+
+postgres=# \c testdb;
+psql (16.2 (Ubuntu 16.2-1.pgdg22.04+1), сервер 14.11 (Ubuntu 14.11-1.pgdg22.04+1))
+Вы подключены к базе данных "testdb" как пользователь "postgres".
+testdb=# REVOKE CREATE on SCHEMA public FROM public; 
+REVOKE
+testdb=# REVOKE ALL on DATABASE testdb FROM public;
+REVOKE
+testdb=# \q
+root@b1-t-oan:/etc/postgresql/14/main# sudo -u postgres psql -U testread -h 127.0.0.1 -W -d postgres
+Пароль: 
+psql (16.2 (Ubuntu 16.2-1.pgdg22.04+1), сервер 14.11 (Ubuntu 14.11-1.pgdg22.04+1))
+SSL-соединение (протокол: TLSv1.3, шифр: TLS_AES_256_GCM_SHA384, сжатие: выкл.)
+Введите "help", чтобы получить справку.
+
+postgres=> \c testdb;
+Пароль: 
+psql (16.2 (Ubuntu 16.2-1.pgdg22.04+1), сервер 14.11 (Ubuntu 14.11-1.pgdg22.04+1))
+SSL-соединение (протокол: TLSv1.3, шифр: TLS_AES_256_GCM_SHA384, сжатие: выкл.)
+Вы подключены к базе данных "testdb" как пользователь "testread".
+testdb=> create table t^Cc1 integer); 
+testdb=> create table t3(c1 integer); 
+ОШИБКА:  нет доступа к схеме public
+```
