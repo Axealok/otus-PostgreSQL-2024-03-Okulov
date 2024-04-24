@@ -45,7 +45,7 @@ I/O size (minimum/optimal): 4096 bytes / 4096 bytes
 ------------
 $ sudo cfdisk /dev/vdb
 ```
-![Create partition](https://github.com/Axealok/otus-PostgreSQL-2024-03-Okulov/blob/cbfc7fee492c82c03d7735929979f385b8951992/HW03-move%20data/hw3_add_disk3.PNG)
+![Create partition](https://github.com/Axealok/otus-PostgreSQL-2024-03-Okulov/blob/8b172e721be7f22b103cb8639d59caa90b152397/HW03-move%20data/hw3_add_disk3.PNG)
 ```
 $ sudo mkfs.ext4 /dev/vdb
 mke2fs 1.46.5 (30-Dec-2021)
