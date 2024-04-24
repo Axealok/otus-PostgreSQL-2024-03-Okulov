@@ -74,6 +74,10 @@ $ mv /var/lib/postgresql/15 /mnt/data
 $ sudo -u postgres pg_ctlcluster 15 main start
 Error: /var/lib/postgresql/15/main is not accessible or does not exist
 ```
+Исправляем путь:
+
+![Automount](https://github.com/Axealok/otus-PostgreSQL-2024-03-Okulov/blob/2e0c0893353bfce91b74dad91a9aaba675f1b389/HW03-move%20data/hw3_pgconf.PNG)
+![Automount](https://github.com/Axealok/otus-PostgreSQL-2024-03-Okulov/blob/2e0c0893353bfce91b74dad91a9aaba675f1b389/HW03-move%20data/hw3_pgconf2.PNG)
 
 ```
 $ sudo -u postgres pg_ctlcluster 15 main start
@@ -82,5 +86,17 @@ Warning: the cluster will not be running as a systemd service. Consider using sy
 $ pg_lsclusters
 Ver Cluster Port Status Owner    Data directory    Log file
 15  main    5432 online postgres /mnt/data/15/main /var/log/postgresql/postgresql-15-main.log
+$ sudo -u postgres psql -p 5432
+could not change directory to "/home/okulovan": Permission denied
+psql (15.6 (Ubuntu 15.6-1.pgdg22.04+1))
+Type "help" for help.
+
+postgres=# select * from test;
+    c1
+-----------
+ TestValue
+(1 row)
+
+postgres=#
 ```
 
