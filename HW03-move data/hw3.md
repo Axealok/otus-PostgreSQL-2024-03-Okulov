@@ -67,7 +67,7 @@ $ sudo mount /dev/vdb /mnt/data
 $ sudo chmod 0777 /mnt/data
 $ sudo nano /etc/fstab
 ```
-![Automount](https://github.com/Axealok/otus-PostgreSQL-2024-03-Okulov/blob/cbfc7fee492c82c03d7735929979f385b8951992/HW03-move%20data/hw3_add_disk4.PNG)
+![Automount](https://github.com/Axealok/otus-PostgreSQL-2024-03-Okulov/blob/e1ab3a14f1be7093be390424b45e071d3b2f02b0/HW03-move%20data/hw3_add_disk4.PNG)
 
 ```
 
