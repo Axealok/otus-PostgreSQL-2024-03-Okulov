@@ -34,6 +34,41 @@ Ver Cluster Port Status Owner    Data directory              Log file
 ![Create disk](https://github.com/Axealok/otus-PostgreSQL-2024-03-Okulov/blob/cbfc7fee492c82c03d7735929979f385b8951992/HW03-move%20data/hw3_add_disk.PNG)
 ![Add disk to VM](https://github.com/Axealok/otus-PostgreSQL-2024-03-Okulov/blob/cbfc7fee492c82c03d7735929979f385b8951992/HW03-move%20data/hw3_add_disk2.PNG)
 
+
 ```
+$ sudo fdisk -l
+------------
+Disk /dev/vdb: 10 GiB, 10737418240 bytes, 20971520 sectors
+Units: sectors of 1 * 512 = 512 bytes
+Sector size (logical/physical): 512 bytes / 4096 bytes
+I/O size (minimum/optimal): 4096 bytes / 4096 bytes
+------------
+$ sudo cfdisk /dev/vdb
+```
+![Create partition](https://github.com/Axealok/otus-PostgreSQL-2024-03-Okulov/blob/cbfc7fee492c82c03d7735929979f385b8951992/HW03-move%20data/hw3_add_disk3.PNG)
+```
+$ sudo mkfs.ext4 /dev/vdb
+mke2fs 1.46.5 (30-Dec-2021)
+Discarding device blocks: done
+Creating filesystem with 2621440 4k blocks and 655360 inodes
+Filesystem UUID: 3921c77d-ba5d-4815-bc72-639d38dc6c0e
+Superblock backups stored on blocks:
+        32768, 98304, 163840, 229376, 294912, 819200, 884736, 1605632
+
+Allocating group tables: done
+Writing inode tables: done
+Creating journal (16384 blocks): done
+Writing superblocks and filesystem accounting information: done
+
+$ sudo mount /dev/vdb /mnt/data
+mount: /mnt/data: mount point does not exist.
+$ sudo mkdir /mnt/data
+$ sudo mount /dev/vdb /mnt/data
+$ sudo chmod 0777 /mnt/data
+$ sudo nano /etc/fstab
+```
+![Automount](https://github.com/Axealok/otus-PostgreSQL-2024-03-Okulov/blob/cbfc7fee492c82c03d7735929979f385b8951992/HW03-move%20data/hw3_add_disk4.PNG)
+```
+
 
 ```
