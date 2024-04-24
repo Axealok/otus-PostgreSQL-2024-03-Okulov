@@ -31,6 +31,8 @@ Ver Cluster Port Status Owner    Data directory              Log file
 
 ## Подключение дополнительного диска
 
+![Create disk](https://github.com/Axealok/otus-PostgreSQL-2024-03-Okulov/blob/cbfc7fee492c82c03d7735929979f385b8951992/HW03-move%20data/hw3_add_disk.PNG)
+![Add disk to VM](https://github.com/Axealok/otus-PostgreSQL-2024-03-Okulov/blob/cbfc7fee492c82c03d7735929979f385b8951992/HW03-move%20data/hw3_add_disk2.PNG)
 
 ```
 
