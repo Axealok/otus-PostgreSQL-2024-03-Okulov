@@ -70,7 +70,17 @@ $ sudo nano /etc/fstab
 ![Automount](https://github.com/Axealok/otus-PostgreSQL-2024-03-Okulov/blob/e1ab3a14f1be7093be390424b45e071d3b2f02b0/HW03-move%20data/hw3_add_disk4.PNG)
 
 ```
+$ mv /var/lib/postgresql/15 /mnt/data
+$ sudo -u postgres pg_ctlcluster 15 main start
+Error: /var/lib/postgresql/15/main is not accessible or does not exist
+```
 
-
+```
+$ sudo -u postgres pg_ctlcluster 15 main start
+Warning: the cluster will not be running as a systemd service. Consider using systemctl:
+  sudo systemctl start postgresql@15-main
+$ pg_lsclusters
+Ver Cluster Port Status Owner    Data directory    Log file
+15  main    5432 online postgres /mnt/data/15/main /var/log/postgresql/postgresql-15-main.log
 ```
 
