@@ -111,3 +111,30 @@ $ sudo umount /dev/vdb
 
 Создаем вторую ВМ
 
+![Create 2nd VM](https://github.com/Axealok/otus-PostgreSQL-2024-03-Okulov/blob/86a4cc5fd870f0e16fb4efd8868901bf4825263c/HW03-move%20data/hw3_add_VM.PNG)
+
+Диск отключаем от 1-й ВМ и подключаем ко 2-й в консоли Cloud.ru
+
+Настраиваем 2-ю ВМ
+
+Монтируем диск с данными
+
+```
+$ sudo mkdir /mnt/data
+$ sudo mount /dev/vdb /mnt/data
+$ sudo -u postgres pg_ctlcluster 15 main stop
+$ sudo nano /etc/postgresql/15/main/postgresql.conf -- правим путь к монтированному диску
+$ sudo -u postgres pg_ctlcluster 15 main start
+Warning: the cluster will not be running as a systemd service. Consider using systemctl:
+  sudo systemctl start postgresql@15-main
+$ sudo -u postgres psql -p 5432
+psql (15.6 (Ubuntu 15.6-1.pgdg22.04+1))
+Type "help" for help.
+
+postgres=# select * from test;
+    c1
+-----------
+ TestValue
+(1 row)
+```
+Данные на месте
