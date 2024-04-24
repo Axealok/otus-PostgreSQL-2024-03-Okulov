@@ -100,3 +100,14 @@ postgres=# select * from test;
 postgres=#
 ```
 
+## Перенос данных на другую ВМ
+
+На первой ВМ отмонтируем диск
+
+```
+$ sudo -u postgres pg_ctlcluster 15 main stop
+$ sudo umount /dev/vdb
+```
+
+Создаем вторую ВМ
+
