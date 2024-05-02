@@ -102,3 +102,52 @@ yc-user@otus-vm:~$
 ```
 Мы увеличили доступные PG ресурсы ВМ - соответственно увеличилась производительность примерно на 30%
 
+## Работа с  Autovacuum
+
+Создаем и заполняем таблицу student случайными данными
+```
+c-user@otus-vm:~$ sudo -u postgres psql -p 5432
+psql (15.6 (Ubuntu 15.6-1.pgdg20.04+1))
+Type "help" for help.
+
+postgres=# CREATE TABLE student(
+postgres(# id serial,
+postgres(# fio char(100)
+postgres(# );
+CREATE TABLE
+
+postgres=# INSERT INTO student(fio) SELECT 'fio' FROM generate_series(1,1000000);
+INSERT 0 1000000
+
+postgres=# select count(*) from student;
+  count  
+---------
+ 1000000
+(1 row)
+
+postgres=# SELECT pg_size_pretty(pg_total_relation_size('student'));
+ pg_size_pretty 
+----------------
+ 135 MB
+(1 row)
+
+
+```
+5 раз обновить все строчки и добавить к каждой строчке любой символ
+
+```
+update student set fio='fio1';
+update student set fio='fio12';
+update student set fio='fio123';
+update student set fio='fio1234';
+update student set fio='fio12345';
+
+postgres-# trunc(100*n_dead_tup/(n_live_tup+1))::float AS "ratio%", last_autovacuum
+postgres-# FROM pg_stat_user_tables WHERE relname = 'student';
+ relname | n_live_tup | n_dead_tup | ratio% |        last_autovacuum        
+---------+------------+------------+--------+-------------------------------
+ student |    1000000 |          0 |      0 | 2024-05-02 08:01:56.212517+00
+(1 row)
+
+
+```
