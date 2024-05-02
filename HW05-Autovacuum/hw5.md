@@ -149,5 +149,128 @@ postgres-# FROM pg_stat_user_tables WHERE relname = 'student';
  student |    1000000 |          0 |      0 | 2024-05-02 08:01:56.212517+00
 (1 row)
 
+update student set fio=concat('fio',1);
+update student set fio=concat('fio',2);
+update student set fio=concat('fio',3);
+update student set fio=concat('fio',4);
+update student set fio=concat('fio',5);
 
+postgres=# SELECT pg_size_pretty(pg_total_relation_size('student'));
+ pg_size_pretty 
+----------------
+ 539 MB
+(1 row)
+
+postgres=# SELECT relname, n_live_tup, n_dead_tup,
+trunc(100*n_dead_tup/(n_live_tup+1))::float AS "ratio%", last_autovacuum
+FROM pg_stat_user_tables WHERE relname = 'student';
+ relname | n_live_tup | n_dead_tup | ratio% |        last_autovacuum        
+---------+------------+------------+--------+-------------------------------
+ student |    1000000 |     999830 |     99 | 2024-05-02 09:31:11.033465+00
+(1 row)
+
+```
+
+Отключаем автовакуум для student
+
+```
+postgres=# alter table student set (autovacuum_enabled = off);
+ALTER TABLE
+postgres=# SELECT relname, n_live_tup, n_dead_tup,
+trunc(100*n_dead_tup/(n_live_tup+1))::float AS "ratio%", last_autovacuum
+FROM pg_stat_user_tables WHERE relname = 'student';
+ relname | n_live_tup | n_dead_tup | ratio% |        last_autovacuum        
+---------+------------+------------+--------+-------------------------------
+ student |    1000000 |          0 |      0 | 2024-05-02 09:31:59.558909+00
+(1 row)
+
+postgres=# 
+
+```
+10 раз обновить все строчки и добавить к каждой строчке любой символ
+
+```
+update student set fio=concat('fio',1);
+---------------
+update student set fio=concat('fio',10);
+
+postgres=# SELECT pg_size_pretty(pg_total_relation_size('student'));
+ pg_size_pretty 
+----------------
+ 1482 MB
+(1 row)
+
+postgres=# SELECT relname, n_live_tup, n_dead_tup,
+trunc(100*n_dead_tup/(n_live_tup+1))::float AS "ratio%", last_autovacuum
+FROM pg_stat_user_tables WHERE relname = 'student';
+ relname | n_live_tup | n_dead_tup | ratio% |        last_autovacuum        
+---------+------------+------------+--------+-------------------------------
+ student |    1000000 |   10000000 |    999 | 2024-05-02 09:31:59.558909+00
+(1 row)
+
+```
+При обновлении строки старая помечается на удаление и создается новая. Фактической очистки не происходит поэтому размер в 11 раз больше первоначального
+
+```
+postgres=# vacuum full;
+VACUUM
+postgres=# SELECT relname, n_live_tup, n_dead_tup,
+trunc(100*n_dead_tup/(n_live_tup+1))::float AS "ratio%", last_autovacuum
+FROM pg_stat_user_tables WHERE relname = 'student';
+ relname | n_live_tup | n_dead_tup | ratio% |        last_autovacuum        
+---------+------------+------------+--------+-------------------------------
+ student |    1000000 |   10000000 |    999 | 2024-05-02 09:31:59.558909+00
+(1 row)
+
+postgres=# SELECT pg_size_pretty(pg_total_relation_size('student'));
+ pg_size_pretty 
+----------------
+ 135 MB
+(1 row)
+
+postgres=# alter table student set (autovacuum_enabled = on);
+ALTER TABLE
+
+postgres=# SELECT relname, n_live_tup, n_dead_tup,
+trunc(100*n_dead_tup/(n_live_tup+1))::float AS "ratio%", last_autovacuum
+FROM pg_stat_user_tables WHERE relname = 'student';
+ relname | n_live_tup | n_dead_tup | ratio% |        last_autovacuum        
+---------+------------+------------+--------+-------------------------------
+ student |    1000000 |          0 |      0 | 2024-05-02 10:04:00.142134+00
+(1 row)
+
+```
+
+# Задание со *
+
+С выполнение задания возникли сложности
+у меня ни в каком виде не захотел принимать оператор цикла FOR
+
+```
+FOR i IN 1..10
+		LOOP
+			update student set fio=concat('fio',i);
+		END loop;
+
+declare
+begin
+	FOR i IN 1..10
+		LOOP
+			update student set fio=concat('fio',i);
+		END loop;
+end;
+
+
+```
+Нашел в документации про анонимное выполнение кода
+https://postgrespro.ru/docs/postgrespro/9.5/sql-do
+В таком виде отработало
+```
+do $$declare i integer;
+begin
+	FOR i IN 1..10
+		LOOP
+			update student set fio=concat('fio',i);
+		END loop;
+end$$;
 ```
