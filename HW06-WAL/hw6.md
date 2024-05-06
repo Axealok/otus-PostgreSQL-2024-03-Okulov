@@ -1,12 +1,14 @@
 # Работа с журналами
-Настраиваем создание контрольной точки каждые 30с
-[Checkpoint timeout = 30s]()
+## Настраиваем создание контрольной точки каждые 30с
+
+![Checkpoint timeout = 30s](https://github.com/Axealok/otus-PostgreSQL-2024-03-Okulov/blob/1b8f545ed16c2c5862404fc02b9a1d0b3fec2895/HW06-WAL/hw61.PNG)
+
 Перезапускаем кластер
 ```
 sudo pg_ctlcluster 15 main restart
 
 ```
-Запускаем нагрузочный тест
+## Запускаем нагрузочный тест
 ```
 root@b1-t-oan:/var/lib/postgresql/15# sudo -u postgres pgbench -P 30 -T 600 -U postgres buffer_temp
 pgbench (15.6 (Ubuntu 15.6-1.pgdg22.04+1))
@@ -121,7 +123,7 @@ buffer_temp-# ;\
 не превышающие по объему минимальной отметки.
 Т.к. в конфиге min_wal_size = 80MB - соответственно 5 файлов
 
-Попробуем нагрузочное тестирование в синхронном и асинхронном режиме
+## Попробуем нагрузочное тестирование в синхронном и асинхронном режиме
 Сначала по умолчанию в синхронном режиме
 ```
 oot@b1-t-oan:/etc/postgresql/15/main# sudo -u postgres pgbench -i buffer_temp
@@ -225,4 +227,4 @@ tps = 769.666110 (without initial connection time)
 root@b1-t-oan:/etc/postgresql/15/main# 
 
 ```
-
+Наблюдаем увеличение TPS
