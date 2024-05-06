@@ -228,3 +228,96 @@ root@b1-t-oan:/etc/postgresql/15/main#
 
 ```
 Наблюдаем увеличение TPS
+
+## Включение контрольной суммы
+
+В материалах урока команда создания кластера с включением проверки контрольной суммы не правильная или устаревшая 
+pg_createcluster --data-checksums
+
+```
+root@b1-t-oan:/bin# pg_createcluster 15 test -p 5433 -- --data-checksums
+Creating new PostgreSQL cluster 15/test ...
+/usr/lib/postgresql/15/bin/initdb -D /var/lib/postgresql/15/test --auth-local peer --auth-host scram-sha-256 --no-instructions --data-checksums
+Файлы, относящиеся к этой СУБД, будут принадлежать пользователю "postgres".
+От его имени также будет запускаться процесс сервера.
+
+Кластер баз данных будет инициализирован с локалью "ru_RU.UTF-8".
+Кодировка БД по умолчанию, выбранная в соответствии с настройками: "UTF8".
+Выбрана конфигурация текстового поиска по умолчанию "russian".
+
+Контроль целостности страниц данных включён.
+
+исправление прав для существующего каталога /var/lib/postgresql/15/test... ок
+создание подкаталогов... ок
+выбирается реализация динамической разделяемой памяти... posix
+выбирается значение max_connections по умолчанию... 100
+выбирается значение shared_buffers по умолчанию... 128MB
+выбирается часовой пояс по умолчанию... Asia/Yekaterinburg
+создание конфигурационных файлов... ок
+выполняется подготовительный скрипт... ок
+выполняется заключительная инициализация... ок
+сохранение данных на диске... ок
+Ver Cluster Port Status Owner    Data directory              Log file
+15  test    5433 down   postgres /var/lib/postgresql/15/test /var/log/postgresql/postgresql-15-test.log
+root@b1-t-oan:/bin# pg lsclusters
+pg: команда не найдена
+root@b1-t-oan:/bin# pg_lsclusters
+Ver Cluster Port Status Owner    Data directory              Log file
+15  main    5432 online postgres /var/lib/postgresql/15/main /var/log/postgresql/postgresql-15-main.log
+15  test    5433 down   postgres /var/lib/postgresql/15/test /var/log/postgresql/postgresql-15-test.log
+root@b1-t-oan:/bin# ^C
+root@b1-t-oan:/bin# 
+
+```
+Останавливаем кластер и удаляем несколько байт
+
+```
+root@b1-t-oan:/bin# sudo pg_ctlcluster 15 test stop
+root@b1-t-oan:/var/lib/postgresql/15/test/base/16384# dd if=/dev/zero of=/var/lib/postgresql/15/test/base/16384/16392 oflag=dsync conv=notrunc bs=1 count=8
+8+0 записей получено
+8+0 записей отправлено
+8 байт скопировано, 0,0135542 s, 0,6 kB/s
+root@b1-t-oan:/var/lib/postgresql/15/test/base/16384# sudo pg_ctlcluster 15 test start
+root@b1-t-oan:/var/lib/postgresql/15/test/base/16384# sudo -u postgres psql -p 5433
+psql (15.6 (Ubuntu 15.6-1.pgdg22.04+1))
+Введите "help", чтобы получить справку.
+postgres=# \c buffer_temp;
+Вы подключены к базе данных "buffer_temp" как пользователь "postgres".
+buffer_temp=# SELECT * from test_text limit 10;
+ПРЕДУПРЕЖДЕНИЕ:  ошибка проверки страницы: получена контрольная сумма 27774, а ожидалась - 58616
+ОШИБКА:  неверная страница в блоке 0 отношения base/16384/16392
+
+```
+Игнорируем ошибку и пытаемя восстановить данные
+
+```
+buffer_temp=# SET zero_damaged_pages = on;
+SET
+buffer_temp=# VACUUM FULL;
+ПРЕДУПРЕЖДЕНИЕ:  ошибка проверки страницы: получена контрольная сумма 27774, а ожидалась - 58616
+ПРЕДУПРЕЖДЕНИЕ:  неверная страница в блоке 0 отношения base/16384/16392; страница обнуляется
+VACUUM
+buffer_temp=# SELECT * from test_text limit 10;
+     t      
+------------
+ строка 173
+ строка 174
+ строка 175
+ строка 176
+ строка 177
+ строка 178
+ строка 179
+ строка 180
+ строка 181
+ строка 182
+(10 строк)
+
+buffer_temp=# SELECT count(*) from test_text;
+ count 
+-------
+   329
+(1 строка)
+
+
+```
+Часть данных потеряна
