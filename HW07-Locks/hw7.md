@@ -33,6 +33,7 @@ locks=# SELECT pg_reload_conf();
 ## Воспроизведите взаимоблокировку трех транзакций. Можно ли разобраться в ситуации постфактум, изучая журнал сообщений?
 
 1-я сессия
+
 ```
 locks=# BEGIN;
 BEGIN
@@ -40,7 +41,9 @@ locks=*# UPDATE accounts SET amount = amount - 100.00 WHERE acc_no = 1;
 UPDATE 1
 
 ```
+
 2-я сессия
+
 ```
 locks=# BEGIN;
 UPDATE accounts SET amount = amount - 10.00 WHERE acc_no = 2;
@@ -48,7 +51,9 @@ BEGIN
 UPDATE 1
 
 ```
+
 3-я сессия
+
 ```
 locks=# BEGIN;
 UPDATE accounts SET amount = amount - 100.00 WHERE acc_no = 3;
@@ -56,19 +61,25 @@ BEGIN
 UPDATE 1
 
 ```
+
 1-я сессия
-``
+
+```
 locks=*# UPDATE accounts SET amount = amount + 100.00 WHERE acc_no = 2;
 
 ```
+
 2-я сессия
+
 ```
 locks=# UPDATE accounts SET amount = amount + 10.00 WHERE acc_no = 3;
 BEGIN
 UPDATE 1
 
 ```
+
 3-я сессия
+
 ```
 locks=*# UPDATE accounts SET amount = amount + 100.00 WHERE acc_no = 1;
 ОШИБКА:  обнаружена взаимоблокировка
