@@ -28,7 +28,26 @@ locks=# SELECT pg_reload_conf();
 
 ## Смоделируйте ситуацию обновления одной и той же строки тремя командами UPDATE в разных сеансах. Изучите возникшие блокировки в представлении pg_locks и убедитесь, что все они понятны. Пришлите список блокировок и объясните, что значит каждая.
 
+Выполним UPDATE одной строки из трех сессий и смотрим блокировки
 
+```
+locks=*# SELECT locktype, relation::REGCLASS, virtualxid AS virtxid, transactionid AS xid, mode, granted
+FROM pg_locks WHERE pid = 349423;
+   locktype    |       relation       | virtxid |   xid   |       mode       | granted 
+---------------+----------------------+---------+---------+------------------+---------
+ relation      | pg_locks             |         |         | AccessShareLock  | t
+ relation      | accounts_acc_no_idx1 |         |         | RowExclusiveLock | t
+ relation      | accounts_acc_no_idx  |         |         | RowExclusiveLock | t
+ relation      | accounts_pkey        |         |         | RowExclusiveLock | t
+ relation      | accounts             |         |         | RowExclusiveLock | t
+ virtualxid    |                      | 5/30    |         | ExclusiveLock    | t
+ transactionid |                      |         | 1099655 | ExclusiveLock    | t
+(7 rows)
+
+```
+1 чтение из таблицы pg_locks 
+2-5 Обновление данных в строке таблицы accounts
+6-7 Изменение пока заблокированной строки
 
 ## Воспроизведите взаимоблокировку трех транзакций. Можно ли разобраться в ситуации постфактум, изучая журнал сообщений?
 
@@ -161,3 +180,36 @@ locks=# SELECT * FROM locks_v;
 ```
 
 ## Могут ли две транзакции, выполняющие единственную команду UPDATE одной и той же таблицы (без where), заблокировать друг друга?
+
+в двух сессиях запускаем update accounts set amount = amount + 100;
+получаем блокировку во второй сессии
+
+```
+locks=*# SELECT locktype, relation::REGCLASS, mode, granted, pid, pg_blocking_pids(pid) AS wait_for
+FROM pg_locks WHERE relation = 'accounts'::regclass order by pid;
+ locktype | relation |       mode       | granted |  pid   | wait_for 
+----------+----------+------------------+---------+--------+----------
+ relation | accounts | RowExclusiveLock | t       | 349423 | {349595}
+ tuple    | accounts | ExclusiveLock    | t       | 349423 | {349595}
+ relation | accounts | RowExclusiveLock | t       | 349595 | {}
+
+```
+Завершаем первую транзакцию - блокировка снимается
+
+```
+locks=*# commit;
+COMMIT
+locks=# SELECT locktype, relation::REGCLASS, mode, granted, pid, pg_blocking_pids(pid) AS wait_for
+FROM pg_locks WHERE relation = 'accounts'::regclass order by pid;
+ locktype | relation |       mode       | granted |  pid   | wait_for 
+----------+----------+------------------+---------+--------+----------
+ relation | accounts | RowExclusiveLock | t       | 349423 | {}
+(1 строка)
+
+locks=# SELECT locktype, relation::REGCLASS, mode, granted, pid, pg_blocking_pids(pid) AS wait_for
+FROM pg_locks WHERE relation = 'accounts'::regclass order by pid;
+ locktype | relation | mode | granted | pid | wait_for 
+----------+----------+------+---------+-----+----------
+(0 строк)
+
+```
