@@ -176,7 +176,205 @@ otus=# select * from test2;
  10 | cc179fd723
 (10 rows)
 ```
+
+Создаем публикацию таблицы test2 и подписываемся на публикацию таблицы test1 с ВМ №1.
+
 ```
+okulovan@b1-t-oan:~$ ssh okulovan@otus-vm
+okulovan@otus-vm's password: 
+Last login: Tue May 21 16:36:13 2024 from 192.168.230.14
+okulovan@otus-vm:~$ sudo -u postgres psql
+[sudo] пароль для okulovan: 
+psql (15.7 (Ubuntu 15.7-1.pgdg22.04+1))
+Type "help" for help.
+
+postgres=# alter system set wal_level = logical;
+ALTER SYSTEM
+postgres=# \q
+okulovan@otus-vm-2:~$ sudo pg_ctlcluster 15 main restart
+[sudo] пароль для okulovan: 
+okulovan@otus-vm-2:~$ sudo -u postgres psql
+psql (15.7 (Ubuntu 15.7-1.pgdg22.04+1))
+Type "help" for help.
+
+postgres=# show wal_level;
+ wal_level 
+-----------
+ logical
+(1 row)
+
+otus=# create subscription test_sub connection 'host=otus-vm port=5432 user=postgres password=postgres dbname=otus' publication test_pub with (copy_data = true);
+ЗАМЕЧАНИЕ:  на сервере публикации создан слот репликации "test_sub"
+CREATE SUBSCRIPTION
+otus=# \dRs
+            List of subscriptions
+   Name   |  Owner   | Enabled | Publication 
+----------+----------+---------+-------------
+ test_sub | postgres | t       | {test_pub}
+(1 row)
+
+otus=# CREATE PUBLICATION test2_pub FOR TABLE test2;
+CREATE PUBLICATION
+otus=# \dRs
+            List of subscriptions
+   Name   |  Owner   | Enabled | Publication 
+----------+----------+---------+-------------
+ test_sub | postgres | t       | {test_pub}
+(1 row)
+
+otus=# \dRp+
+                           Publication test2_pub
+  Owner   | All tables | Inserts | Updates | Deletes | Truncates | Via root 
+----------+------------+---------+---------+---------+-----------+----------
+ postgres | f          | t       | t       | t       | t         | f
+Tables:
+    "public.test2"
+
+otus=# select * from test;
+ id |    fio     
+----+------------
+  1 | deb68ee844
+  2 | 2c780db929
+  3 | 83a5cbb7fc
+  4 | f7ca8d61df
+  5 | b2eb0d72bb
+  6 | 5f769aa9be
+  7 | da566219df
+  8 | 1fd0952b7d
+  9 | 9d8cc05873
+ 10 | 1f0125b8b4
+(10 rows)
+
+otus=# select * from test2;
+ id |    fio     
+----+------------
+  1 | 72b7cca521
+  2 | 6f6cced064
+  3 | 6771130cfc
+  4 | b66e47b796
+  5 | 21a3cd1f23
+  6 | 4fb1185103
+  7 | b891f2c453
+  8 | 62795f6a5b
+  9 | 93ef839629
+ 10 | cc179fd723
+(10 rows)
 ```
+3 ВМ использовать как реплику для чтения и бэкапов (подписаться на таблицы из ВМ №1 и №2 ).
+
 ```
+okulovan@b1-t-oan:~$ ssh okulovan@otus-vm-3
+Last login: Tue May 14 10:56:57 2024 from 192.168.230.14
+okulovan@otus-vm-3:~$ sudo -u postgres psql
+psql (15.7 (Ubuntu 15.7-1.pgdg22.04+1))
+Type "help" for help.
+
+postgres=# alter user postgres password 'postgres';
+ALTER ROLE
+postgres=# alter system set wal_level = logical;
+ALTER SYSTEM
+postgres=# \q
+okulovan@otus-vm-3:~$ sudo pg_ctlcluster 15 main restart
+okulovan@otus-vm-3:~$ sudo -u postgres psql
+psql (15.7 (Ubuntu 15.7-1.pgdg22.04+1))
+Type "help" for help.
+
+postgres=# create database otus;
+CREATE DATABASE
+postgres=# create table test (id int, fio text);
+CREATE TABLE
+postgres=# create table test2 (id int, fio text);
+CREATE TABLE
+postgres=# create subscription test_sub connection 'host=otus-vm port=5432 user=postgres password=postgres dbname=otus' publication test_pub with (copy_data = true);
+ОШИБКА:  не удалось создать слот репликации "test_sub": ОШИБКА:  слот репликации "test_sub" уже существует
+postgres=# create subscription test_sub3 connection 'host=otus-vm port=5432 user=postgres password=postgres dbname=otus' publication test_pub with (copy_data = true);
+ЗАМЕЧАНИЕ:  на сервере публикации создан слот репликации "test_sub3"
+CREATE SUBSCRIPTION
+postgres=# create subscription test2_sub3 connection 'host=otus-vm-2 port=5432 user=postgres password=postgres dbname=otus' publication test2_pub with (copy_data = true);
+ЗАМЕЧАНИЕ:  на сервере публикации создан слот репликации "test2_sub3"
+CREATE SUBSCRIPTION
+postgres=# \dRs
+             List of subscriptions
+    Name    |  Owner   | Enabled | Publication 
+------------+----------+---------+-------------
+ test2_sub3 | postgres | t       | {test2_pub}
+ test_sub3  | postgres | t       | {test_pub}
+(2 rows)
+
+postgres=# select * from test;
+ id |    fio     
+----+------------
+  1 | deb68ee844
+  2 | 2c780db929
+  3 | 83a5cbb7fc
+  4 | f7ca8d61df
+  5 | b2eb0d72bb
+  6 | 5f769aa9be
+  7 | da566219df
+  8 | 1fd0952b7d
+  9 | 9d8cc05873
+ 10 | 1f0125b8b4
+(10 rows)
+
+postgres=# select * from test2;
+ id |    fio     
+----+------------
+  1 | 72b7cca521
+  2 | 6f6cced064
+  3 | 6771130cfc
+  4 | b66e47b796
+  5 | 21a3cd1f23
+  6 | 4fb1185103
+  7 | b891f2c453
+  8 | 62795f6a5b
+  9 | 93ef839629
+ 10 | cc179fd723
+(10 rows)
+
+``
+При создании подписок забыл подключитьсясоздать базу otus. Копии баз создались в  postgres
+
+Пришлось исправиться
+
+```
+postgres=# \c otus
+You are now connected to database "otus" as user "postgres".
+otus=# \dt
+Did not find any relations.
+otus=# \q
+okulovan@otus-vm-3:~$ sudo -u postgres psql
+could not change directory to "/home/okulovan": Отказано в доступе
+psql (15.7 (Ubuntu 15.7-1.pgdg22.04+1))
+Type "help" for help.
+
+postgres=# drop subscription test_sub3;
+ЗАМЕЧАНИЕ:  слот репликации "test_sub3" удалён на сервере репликации
+DROP SUBSCRIPTION
+postgres=# drop subscription test2_sub3;
+ЗАМЕЧАНИЕ:  слот репликации "test2_sub3" удалён на сервере репликации
+DROP SUBSCRIPTION
+postgres=# drop table test;
+DROP TABLE
+postgres=# drop table test2;
+DROP TABLE
+postgres=# \c otus
+You are now connected to database "otus" as user "postgres".
+otus=# create table test (id int, fio text);
+CREATE TABLE
+otus=# create table test2 (id int, fio text);
+CREATE TABLE
+otus=# create subscription test_sub3 connection 'host=otus-vm port=5432 user=postgres password=postgres dbname=otus' publication test_pub with (copy_data = true);
+ЗАМЕЧАНИЕ:  на сервере публикации создан слот репликации "test_sub3"
+CREATE SUBSCRIPTION
+otus=# create subscription test2_sub3 connection 'host=otus-vm-2 port=5432 user=postgres password=postgres dbname=otus' publication test2_pub with (copy_data = true);
+ЗАМЕЧАНИЕ:  на сервере публикации создан слот репликации "test2_sub3"
+CREATE SUBSCRIPTION
+otus=# \dRs
+             List of subscriptions
+    Name    |  Owner   | Enabled | Publication 
+------------+----------+---------+-------------
+ test2_sub3 | postgres | t       | {test2_pub}
+ test_sub3  | postgres | t       | {test_pub}
+(2 rows)
+
 ```
