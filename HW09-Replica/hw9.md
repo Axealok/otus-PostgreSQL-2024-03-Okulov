@@ -379,3 +379,72 @@ otus=# \dRs
 (2 rows)
 
 ```
+
+## * реализовать горячее реплицирование для высокой доступности на 4ВМ. Источником должна выступать ВМ №3. Написать с какими проблемами столкнулись.
+
+Подключаемся к 4-й ВМ
+
+Останавливаем кластер
+
+Удаляем соджержимое /var/lib/postgresql/15/main
+
+Создаем бакап с 3-й ВМ с ключем R
+```
+okulovan@b1-t-oan:~$ ssh okulovan@otus-vm-4
+
+root@otus-vm-4:/var/lib/postgresql/15/main# sudo pg_ctlcluster 15 main stop
+root@otus-vm-4:/var/lib/postgresql/15/main# sudo -u postgres pg_basebackup -h otus-vm-3 -p 5432 -R -D /var/lib/postgresql/15/main
+pg_basebackup: ошибка: подключиться к серверу "otus-vm-3" (192.168.230.95), порту 5432 не удалось: ВАЖНО:  в pg_hba.conf нет записи, разрешающей подключение для репликации с компьютера "192.168.230.96" для пользователя "postgres", Шифрование SSL
+подключиться к серверу "otus-vm-3" (192.168.230.95), порту 5432 не удалось: ВАЖНО:  в pg_hba.conf нет записи, разрешающей подключение для репликации с компьютера "192.168.230.96" для пользователя "postgres", без шифрования
+```
+Правим pg_hba.conf на 3-й ВМ перезапускаем кластер на 3-й ВМ
+
+Создаем бакап с 3-й ВМ с ключем R
+
+Запускаем кластер
+
+Проверяем
+
+```
+root@otus-vm-4:/var/lib/postgresql/15/main# sudo -u postgres pg_basebackup -h otus-vm-3 -p 5432 -R -D /var/lib/postgresql/15/main
+Пароль: 
+root@otus-vm-4:/var/lib/postgresql/15/main# 
+sudo -u postgres pg_basebackup -h otus-vm-3 -p 54pg_ctlcluster 15 main start
+root@otus-vm-4:/var/lib/postgresql/15/main# pg_lsclusters 
+Ver Cluster Port Status          Owner    Data directory              Log file
+15  main    5432 online,recovery postgres /var/lib/postgresql/15/main /var/log/postgresql/postgresql-15-main.log
+root@otus-vm-4:/var/lib/postgresql/15/main# sudo -u postgres psql
+psql (15.7 (Ubuntu 15.7-1.pgdg22.04+1))
+Введите "help", чтобы получить справку.
+
+postgres=# alter system set hot_standby = on;
+ALTER SYSTEM
+postgres=# select pg_reload_conf();
+ pg_reload_conf 
+----------------
+ t
+(1 строка)
+
+postgres=# \l
+                                                  Список баз данных
+    Имя    | Владелец | Кодировка | LC_COLLATE  |  LC_CTYPE   | локаль ICU | Провайдер локали |     Права доступа     
+-----------+----------+-----------+-------------+-------------+------------+------------------+-----------------------
+ otus      | postgres | UTF8      | ru_RU.UTF-8 | ru_RU.UTF-8 |            | libc             | 
+ postgres  | postgres | UTF8      | ru_RU.UTF-8 | ru_RU.UTF-8 |            | libc             | 
+ template0 | postgres | UTF8      | ru_RU.UTF-8 | ru_RU.UTF-8 |            | libc             | =c/postgres          +
+           |          |           |             |             |            |                  | postgres=CTc/postgres
+ template1 | postgres | UTF8      | ru_RU.UTF-8 | ru_RU.UTF-8 |            | libc             | =c/postgres          +
+           |          |           |             |             |            |                  | postgres=CTc/postgres
+(4 строки)
+
+postgres=# \c otus
+Вы подключены к базе данных "otus" как пользователь "postgres".
+otus=# \dt
+          Список отношений
+ Схема  |  Имя  |   Тип   | Владелец 
+--------+-------+---------+----------
+ public | test  | таблица | postgres
+ public | test2 | таблица | postgres
+(2 строки)
+
+```
